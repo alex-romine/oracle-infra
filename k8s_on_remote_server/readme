@@ -1,0 +1,11 @@
+# normal install
+ap -e host_server="oracle.greatdnd.world" -e server_user_id=ubuntu -e ssh_key_path="~/.ssh/oracle" k8s_on_remote_server.yaml
+
+# uninstall then reinstall
+ap -e uninstall_k3s_cluster=yes -e host_server="oracle.greatdnd.world" -e server_user_id=ubuntu -e ssh_key_path="~/.ssh/oracle" k8s_on_remote_server.yaml
+
+# skip executable install
+ap -e install_executables="" -e host_server="oracle.greatdnd.world" -e server_user_id=ubuntu -e ssh_key_path="~/.ssh/oracle" k8s_on_remote_server.yaml
+
+# get new context
+k3sup install --skip-install --host oracle.greatdnd.world --user ubuntu --ssh-key ~/.ssh/oracle --local-path ~/.kube/config

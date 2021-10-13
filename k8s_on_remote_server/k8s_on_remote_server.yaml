@@ -1,0 +1,89 @@
+- name: Install with k3s
+  hosts: oracle
+  vars:
+    host_server: ""
+    server_user_id: ""
+    ssh_key_path: ""
+    context_name: "k3sup"
+    uninstall_k3s_cluster: ""
+    install_executables: yes
+    kube_config_path: /home/wizard/.kube/config
+  tasks:
+    # this step is the theoretical difference between what I was doing and this: https://medium.com/geekculture/how-to-create-an-always-free-k8s-cluster-in-oracle-cloud-60be3b107c44
+    - name: Disable IP tables
+      shell: 
+        cmd: iptables -F; iptables-save > /etc/iptables/rules.v4
+
+    - name: Uninstall k3s cluster
+      when: uninstall_k3s_cluster
+      ignore_errors: yes
+      block:
+      - name: reset k3s if it exists
+        become: yes
+        block:
+        - name: "Run k3s-killall.sh"
+          shell:
+            cmd: k3s-killall.sh
+
+        - name: "Run k3s-uninstall.sh"
+          shell:
+            cmd: k3s-uninstall.sh
+            removes: /usr/local/bin/k3s-uninstall.sh
+
+        - name: "Run k3s-agent-uninstall.sh"
+          shell:
+            cmd: k3s-agent-uninstall.sh
+            removes: /usr/local/bin/k3s-agent-uninstall.sh
+
+    - name: Install executables
+      when: install_executables
+      block:
+        - name: Set variables
+          set_fact:
+            executables_to_install:
+              - {'name': 'k3s', 'url': 'get.k3s.io'}
+              - {'name': 'k3sup', 'url': 'get.k3sup.dev'}
+
+        - name: Get installers
+          uri:
+            url: https://{{ item.url }}
+            dest: /tmp/{{ item.name }}
+            owner: "{{ ansible_user_id }}"
+            group: "{{ ansible_user_id }}"
+            mode: 0744
+          loop: "{{ executables_to_install }}"
+
+        - name: Install executables
+          script: /tmp/{{ item.name }}
+          loop: "{{ executables_to_install }}"
+
+        - name: Copy k3sup to /usr/local/bin
+          become: yes
+          copy:
+            src: "{{ ansible_env.HOME }}/k3sup-arm64"
+            dest: /usr/local/bin
+            owner: "{{ ansible_user_id }}"
+            group: "{{ ansible_user_id }}"
+            remote_src: yes
+            mode: 0744
+
+        - name: Remove k3sup in local directory
+          file:
+            path: "{{ ansible_env.HOME }}/k3sup-arm64"
+            state: absent
+
+    - name: Make .kube directory
+      file:
+        path: "{{ ansible_env.HOME }}/.kube"
+        state: directory
+
+    - name: Run install
+      delegate_to: localhost
+      shell:
+        cmd: k3sup install --host {{ host_server }} --user {{ server_user_id }} --ssh-key {{ ssh_key_path }} --local-path {{ kube_config_path }} --context {{ context_name }}
+
+    - name: Fix permissions on kubeconfig
+      delegate_to: localhost
+      file:
+        path: "{{ kube_config_path }}"
+        mode: 0600
