@@ -107,3 +107,4 @@ resource "oci_core_instance" "the_instance" {
 output "instance_ip" {
   value = oci_core_instance.the_instance.public_ip
 }
+
