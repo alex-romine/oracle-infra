@@ -79,7 +79,7 @@ resource "oci_core_default_security_list" "the_security_list" {
 
 resource "oci_core_instance" "the_instance" {
   display_name        = "${var.resources_name_prefix}-instance"
-  availability_domain = "DeZS:US-SANJOSE-1-AD-1"
+  availability_domain = var.availability_domain
   compartment_id      = var.compartment_id
   shape               = "VM.Standard.A1.Flex"
 
