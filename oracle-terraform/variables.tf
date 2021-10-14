@@ -16,10 +16,3 @@ variable "vcn_cidr_block" {
   default = "10.0.0.0/16"
 }
 
-################
-### AWS Part ###
-################
-
-variable "aws_region" {}
-
-variable "aws_zone_name" {}
